@@ -1,0 +1,25 @@
+name: ws_app
+description:  Flutter application.
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.2.2 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^0.1.2
+
+  barcode_scan: ^1.0.0
+  font_awesome_flutter: ^8.4.0
+  sqflite: ^1.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
+flutter:
+  uses-material-design: true
+
