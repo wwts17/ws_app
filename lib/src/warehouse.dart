@@ -53,10 +53,7 @@ class WarehouseRepository {
     return result;
     //return [Warehouse(id: 0, name: "柳州1号仓"), Warehouse(id: 1, name: "柳州2号仓")];
   }
-
-  clean() async{
-    await SQLiteClient().clean();
-  }
+  
 
   Future<Warehouse> queryById(int id) async{
     final client = await SQLiteClient().getConn();

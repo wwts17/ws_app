@@ -158,12 +158,6 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
                     ),
                   ],
                 ),
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 20.0),
-                child: RaisedButton(child: Text('清除数据'),onPressed: () async{
-                  await _whRepo.clean();
-                }),
               )
             ],
           ),

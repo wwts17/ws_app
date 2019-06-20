@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'src/widgets/add_car.dart';
 import 'src/widgets/add_warehouse.dart';
 import 'src/widgets/carlist.dart';
+import 'src/widgets/settings.dart';
 
 void main() {
   runApp(MyApp());
@@ -80,7 +81,11 @@ class _HomePageState extends State<HomePage>
           );
         });
       case 1:
-        return IconButton(icon:Icon(Icons.settings) , onPressed: null);
+        return IconButton(icon:Icon(Icons.settings) , onPressed:(){
+          Navigator.of(context).push(MaterialPageRoute(builder: (context){
+            return SettingPage();
+          }));
+        });
       default:
         return null;
     }
