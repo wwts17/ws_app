@@ -68,4 +68,10 @@ class CarRepository {
     var result = await client.query(_table,orderBy: 'created_at desc').then((l)=>l.map((m)=>Car.fromMap(m)).toList());
     return result;
   }
+
+  Future<List<Car>> searchVIN(String vin) async {
+    final client = await SQLiteClient().getConn();
+    var result = await client.query(_table,where:"vin like ? ",whereArgs: ['%${vin}%'],orderBy: 'created_at desc').then((l)=>l.map((m)=>Car.fromMap(m)).toList());
+    return result;
+  }
 }

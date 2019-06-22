@@ -19,6 +19,7 @@ dependencies:
   permission_handler: ^3.1.0
   csv: ^4.0.3
   gbk2utf8: ^1.0.1
+  loader_search_bar: ^1.0.3+3
 
   spreadsheet_decoder: ^1.0.1
 

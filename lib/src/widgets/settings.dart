@@ -75,6 +75,32 @@ class _SettingPageState extends State<SettingPage>
   }
 
   void _outputData() async {
+    List<List> buffer = await _exportCSVCarList();
+    await _requestPermissions();
+    final directory = await getExternalStorageDirectory();
+    DateTime currentTime = DateTime.now();
+    String timestamp =
+        "${currentTime.year}${currentTime.month}${currentTime.day}${currentTime.hour}${currentTime.minute}${currentTime.second}";
+    File file = File('${directory.path}/Documents/入库记录$timestamp.csv');
+    String csv = const ListToCsvConverter().convert(buffer);
+    await file.writeAsBytes(gbk.encode(csv));
+    setState(() {
+      _outputPath = file.path;
+    });
+  }
+
+  Future _requestPermissions() async {
+    PermissionStatus permission = await PermissionHandler()
+        .checkPermissionStatus(PermissionGroup.storage);
+
+    if (permission != PermissionStatus.granted) {
+      Map<PermissionGroup, PermissionStatus> permissions =
+          await PermissionHandler()
+              .requestPermissions([PermissionGroup.storage]);
+    }
+  }
+
+  Future<List<List>> _exportCSVCarList() async {
     final client = await SQLiteClient().getConn();
     final sql = '''
     SELECT 
@@ -87,36 +113,18 @@ class _SettingPageState extends State<SettingPage>
     FROM car,warehouse WHERE car.warehouse_id = warehouse.id ORDER BY 创建时间;
     ''';
     var result = await client.rawQuery(sql);
-    List<List<dynamic>> buffer = List();
-    // 字段
+    List<List<dynamic>> rows = List();
+    // [[field1, field2, field3, ...],[ column1.v1, column1.v2, column1.v3 ...], ...]
     var field = result[0].keys.toList();
-    buffer.add(field);
+    rows.add(field);
     result.forEach((f) {
-      var temp = [];
-      for(int i=0;i<field.length;i++){
-        temp.add(f[field[i]]);
+      var row = [];
+      for (int i = 0; i < field.length; i++) {
+        row.add(f[field[i]]);
       }
-      buffer.add(temp);
+      rows.add(row);
     });
-    PermissionStatus permission = await PermissionHandler()
-        .checkPermissionStatus(PermissionGroup.storage);
-
-    if (permission != PermissionStatus.granted) {
-      Map<PermissionGroup, PermissionStatus> permissions =
-          await PermissionHandler()
-              .requestPermissions([PermissionGroup.storage]);
-    }
-
-    final directory = await getExternalStorageDirectory();
-    var path = directory.path;
-    var now = DateTime.now();
-    var file = File(
-        '$path/Documents/入库记录${now.year}${now.month}${now.day}${now.hour}${now.minute}${now.second}.csv');
-    String csv = const ListToCsvConverter().convert(buffer);
-    await file.writeAsBytes(gbk.encode(csv));
-    setState(() {
-      _outputPath = file.path;
-    });
+    return rows;
   }
 
   void _inputData() async {

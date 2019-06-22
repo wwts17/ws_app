@@ -1,0 +1,93 @@
+import 'package:flutter/material.dart';
+import '../car.dart';
+import '../warehouse.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+class SearchPage extends StatefulWidget {
+  @override
+  _SearchPageState createState() => _SearchPageState();
+}
+
+class _SearchPageState extends State<SearchPage>
+    with SingleTickerProviderStateMixin {
+  final _carRepo = CarRepository();
+  final _whRepo = WarehouseRepository();
+  final _textController= TextEditingController();
+  int _currentIndex = 0;
+  List _searchResult = [];
+  String _vin = '';
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: TextField(
+          controller: _textController,
+          decoration: InputDecoration(
+            icon: Icon(FontAwesomeIcons.search,color: Colors.white,),
+            suffix:IconButton(icon: Icon(Icons.close),onPressed: (){
+              _textController.text = '';
+            },),
+          ),
+          onChanged: (input){
+            setState(() {
+              _vin = input;
+            });
+          },
+        ),
+        ),
+      body: FutureBuilder<List<Car>>(
+        future: _carRepo.searchVIN(_vin),
+        builder: (context,snap){
+          if(snap.connectionState==ConnectionState.done&&snap.data!=null){
+            List<Widget> widgets = List();
+            widgets.add(Text('Total：${snap.data.length}',style: TextStyle(fontSize: 20.0),));
+            for (int i=0;i<snap.data.length;i++) {
+              widgets.add(Card(
+                child: Column(
+                  children: <Widget>[
+                    Text('${i+1}/${snap.data.length}'),
+                    Text('ID：${snap.data[i].id}'),
+                    Text('车辆识别码：${snap.data[i].vin}'),
+                    FutureBuilder<Warehouse>(
+                      future: _whRepo.queryById(snap.data[i].id),
+                      builder: (context,snap2){
+                        if(snap2.connectionState==ConnectionState.done){
+                          return Text('仓库：${snap2.data.name}');
+                        }else{
+                          return Container();
+                        }
+                      },
+                    ),
+                    Text('标识：${snap.data[i].mark}'),
+                    Text('序号：${snap.data[i].num}'),
+                    Text('创建时间：${snap.data[i].createdAt}'),
+                    Text('更新时间：${snap.data[i].updatedAt}'),
+                  ],
+                ),
+              ));
+            }
+            return ListView(
+              children: widgets,
+            );
+          }else{
+            return Container();
+          }
+        },
+      ),
+    );
+  }
+
+
+}
