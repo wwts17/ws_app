@@ -11,9 +11,8 @@ class _AddWarehouseState extends State<AddWarehouse>
     with SingleTickerProviderStateMixin {
   AnimationController _controller;
   final _formKer = GlobalKey<FormState>();
-  final whRepo = WarehouseRepository();
+  final _whRepo = WarehouseRepository();
   String _name;
-
 
   @override
   void initState() {
@@ -36,25 +35,30 @@ class _AddWarehouseState extends State<AddWarehouse>
           padding: EdgeInsets.all(8.0),
           child: Form(
               key: _formKer,
-              child: TextFormField(
-                validator: (input) {
-                  // input only word, number, _
-                  var r= RegExp(r'[\u4e00-\u9fa5\w]+$');
-                  if(!r.hasMatch(input)){
-                    return '请输入正确仓库名';
-                  }
-                  return null;
-                },
-                onSaved: (input) {
-                  setState(() {
-                    _name = input;
-                  });
-                },
-                decoration: InputDecoration(
-                  icon: Icon(FontAwesomeIcons.warehouse),
-                  labelText: '仓库名',
-                ),
-              )),
+              child:Column(
+                children: <Widget>[
+                  TextFormField(
+                    validator: (input){
+                      // input only word, number, _
+                      var r= RegExp(r'[\u4e00-\u9fa5\w]+$');
+                      if(input==null||!r.hasMatch(input)){
+                        return '请输入正确仓库名';
+                      }
+                      return null;
+                    },
+                    onSaved: (input) {
+                      setState(() {
+                        _name = input;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      icon: Icon(FontAwesomeIcons.warehouse),
+                      labelText: '仓库名',
+                    ),
+                  )
+                ],
+              ),
+          ),
         ),
         Padding(
           padding: EdgeInsets.symmetric(vertical: 20.0),
@@ -65,10 +69,17 @@ class _AddWarehouseState extends State<AddWarehouse>
                 onPressed: () async {
                   if (_formKer.currentState.validate()) {
                     _formKer.currentState.save();
-                    await whRepo.save(Warehouse(name: _name));
+                    var result = await _whRepo.queryByName(_name);
+                    if (result==null){
+                      await _whRepo.save(Warehouse(name: _name));
+                    }
+                    Navigator.of(context).pop(true);
                   }
                 },
                 child: Text('提交'),
+              ),
+              Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.0),
               ),
               RaisedButton(
                 onPressed: () {
@@ -82,4 +93,6 @@ class _AddWarehouseState extends State<AddWarehouse>
       ],
     );
   }
+
+
 }

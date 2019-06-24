@@ -59,9 +59,18 @@ class WarehouseRepository {
     final client = await SQLiteClient().getConn();
     var result = await client.query(_table,where: 'id = ?',whereArgs: [id]);
     if(result.isEmpty){
-      throw DataException('not found data');
+      return null;
     }
     return Warehouse.fromMap(result[0]);
+  }
+
+  Future<Warehouse> queryByName(String name) async{
+      final client = await SQLiteClient().getConn();
+      var result = await client.query(_table,where: 'name = ?',whereArgs: [name]);
+      if(result.isEmpty){
+        return null;
+      }
+      return Warehouse.fromMap(result[0]);
   }
 }
 

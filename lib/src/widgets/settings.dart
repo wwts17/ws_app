@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:csv/csv.dart';
 import 'package:gbk2utf8/gbk2utf8.dart';
 
+
 import '../database.dart';
 
 class SettingPage extends StatefulWidget {
@@ -105,12 +106,12 @@ class _SettingPageState extends State<SettingPage>
     final sql = '''
     SELECT 
     car.id AS ID,
-    car.vin AS 车辆识别码,
+    car.vin AS VIN码,
     warehouse.name AS 仓库,
-    car.mark AS 标识,
+    car.mark AS 道位,
     car.num AS 序号,
-    car.created_at AS 创建时间
-    FROM car,warehouse WHERE car.warehouse_id = warehouse.id ORDER BY 创建时间;
+    car.created_at AS 扫描时间
+    FROM car,warehouse WHERE car.warehouse_id = warehouse.id ORDER BY 扫描时间;
     ''';
     var result = await client.rawQuery(sql);
     List<List<dynamic>> rows = List();
@@ -129,9 +130,19 @@ class _SettingPageState extends State<SettingPage>
 
   void _inputData() async {
     var file = await FilePicker.getFile();
-    setState(() {
-      _openPath = file.path;
-    });
+    var decoder = new SpreadsheetDecoder.decodeBytes(file.readAsBytesSync());
+    var table = decoder.tables['Sheet1'];
+    var columnName = table.rows[0];
+    List<Map<String,dynamic>> alls = List();
+    for(int i=1;i<table.rows.length;i++){
+      var row = table.rows[i];
+      Map<String,dynamic> gen = {};
+      for(int j=0;j<columnName.length;j++){
+        gen.addAll({columnName[j]:row[j]});
+      }
+      alls.add(gen);
+    }
+    alls.forEach((f)=>print('${f}'));
   }
 
   void _deleteData() {

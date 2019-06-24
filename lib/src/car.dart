@@ -1,5 +1,6 @@
 import 'database.dart';
 import 'exception.dart';
+import 'package:sqflite/sqflite.dart';
 
 class Car {
   int id;
@@ -69,9 +70,23 @@ class CarRepository {
     return result;
   }
 
-  Future<List<Car>> searchVIN(String vin) async {
+  Future<Car> latest() async{
+    final client = await SQLiteClient().getConn();
+    var result = await client.query(_table, orderBy: 'created_at desc', limit: 1).then((l)=>l.map((m)=>Car.fromMap(m)).toList());
+    if (result.isEmpty){
+      return null;
+    }
+    return result[0];
+  }
+
+  Future<List<Car>> searchVinLike(String vin) async {
     final client = await SQLiteClient().getConn();
     var result = await client.query(_table,where:"vin like ? ",whereArgs: ['%${vin}%'],orderBy: 'created_at desc').then((l)=>l.map((m)=>Car.fromMap(m)).toList());
     return result;
+  }
+
+  Future<int> count(int warehouseId,String mark) async{
+    final client = await SQLiteClient().getConn();
+    return Sqflite.firstIntValue(await client.rawQuery('select count(id) from car where warehouse_id = ? and mark = ?',[warehouseId,mark]));
   }
 }

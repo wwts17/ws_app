@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:barcode_scan/barcode_scan.dart';
 import 'package:flutter/services.dart';
+import 'package:audioplayers/audio_cache.dart';
 import '../warehouse.dart';
 import '../car.dart';
 
@@ -10,22 +11,31 @@ class AddCar extends StatefulWidget {
   _AddCarState createState() => _AddCarState();
 }
 
+const _successAudio = 'success.mp3';
+
 class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
   AnimationController _controller;
 
+  static AudioCache _player = AudioCache();
   final _whRepo = WarehouseRepository();
-  final carRepo = CarRepository();
+  final _carRepo = CarRepository();
   final _textController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _fieldState = false;
   String _barcode = '';
-  int _selected,_num;
-  String _mark,_vin;
+  int _selected;
+  String _mark, _vin;
+  static List<Car> latest = [];
 
   @override
   void initState() {
+    loadData();
     _controller = AnimationController(vsync: this);
     super.initState();
+  }
+
+  loadData() async {
+    await _player.load(_successAudio);
   }
 
   @override
@@ -37,150 +47,185 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.all(10.0),
-      child: ListView(children: [
-        Form(
-          key: _formKey,
-          child: Column(
-            children: <Widget>[
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 12.0),
-                child: FutureBuilder<List<Warehouse>>(
-                  future: _whRepo.all(),
-                  builder: (context, snap) {
-                    if (snap.connectionState == ConnectionState.done &&
-                        snap.data != null && snap.data.isNotEmpty) {
-                      return DropdownButtonFormField(
-                        onChanged: (value) {
-                          print(value);
-                          setState(() {
-                            _selected = value;
-                            _fieldState = true;
-                          });
-                        },
-                        value: _selected,
-                        decoration: InputDecoration(
-                          labelText: '仓库',
-                          icon: Icon(Icons.storage),
-                        ),
-                        items: snap.data
-                            .map((m) => DropdownMenuItem(
-                                value: m.id, child: Text(m.name)))
-                            .toList(),
-                      );
-                    } else {
-                      return Container();
-                    }
-                  },
+    return  ListView(
+                children:[
+                  _buildForm(),
+                Padding(
+                  padding: EdgeInsets.only(top: 20.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                    Row(
+                    children: <Widget>[
+                      Text(
+                        '最近',
+                        style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.w500),
+                      ),
+                      Icon(
+                        Icons.access_time,
+                        size: 26.0,
+                      ),
+                    ],
+                  ),
+                      Text('扫描数量：${latest.length}')
+                    ],
+                  ),
                 ),
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 12.0),
-                child: TextFormField(
-                  controller: _textController,
-                  enabled: _fieldState,
-                  validator: (input){
-                    var r= RegExp(r'^[A-Za-z0-9]{17}$');
-                    if(!r.hasMatch(input)){
-                      return '请输入由数字和字母组成的17位识别码';
-                    }
-                    return null;
-                  },
-                  onSaved: (input)=>_vin = input,
-                  decoration: InputDecoration(
-                    labelText: '车辆识别码',
-                    icon: Icon(Icons.code),
-                    suffixIcon: IconButton(
-                      icon: Icon(Icons.camera_alt),
-                      onPressed: () async {
-                        await scan();
+                Column(
+                  children: latest
+                      .map((f) =>Card(
+                      child: Container(
+                          child:Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          Text('VIN码:${f.vin}'),
+                          FutureBuilder<Warehouse>(
+                            future: _whRepo.queryById(f.warehouseId),
+                            builder: (context, snap2) {
+                              if (snap2.connectionState == ConnectionState.done) {
+                                return Text('仓库：${snap2.data.name}');
+                              } else {
+                                return Container();
+                              }
+                            },
+                          ),
+                          Text('道位：${f.mark}'),
+                          Text('序号：${f.num}'),
+                        ],
+                      )))).toList(),
+                ),
+              ],
+            );
+  }
+
+
+  Widget _buildForm() {
+    return Form(
+        key: _formKey,
+        child: Column(
+          children: <Widget>[
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.0),
+              child: FutureBuilder<List<Warehouse>>(
+                future: _whRepo.all(),
+                builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.done &&
+                      snap.data != null &&
+                      snap.data.isNotEmpty) {
+                    return DropdownButtonFormField<int>(
+                      onChanged: (value) {
+                        print(value);
                         setState(() {
-                          _textController.text = _barcode;
+                          _selected = value;
+                          _fieldState = true;
                         });
                       },
-                    ),
+                      validator: (input) {
+                        if (input == null || input == 0) {
+                          return '请选择仓库';
+                        }
+                      },
+                      value: _selected,
+                      decoration: InputDecoration(
+                        labelText: '仓库',
+                        icon: Icon(Icons.storage),
+                      ),
+                      items: snap.data
+                          .map((m) => DropdownMenuItem(
+                              value: m.id, child: Text(m.name)))
+                          .toList(),
+                    );
+                  } else {
+                    return Container();
+                  }
+                },
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.0),
+              child: TextFormField(
+                controller: _textController,
+                enabled: _fieldState,
+                validator: (input) {
+                  var r = RegExp(r'^[A-Za-z0-9]{17}$');
+                  if (input.isEmpty || !r.hasMatch(input)) {
+                    return '请输入由数字和字母组成的17位识别码';
+                  }
+                  return null;
+                },
+                onSaved: (input) => _vin = input,
+                decoration: InputDecoration(
+                  labelText: 'VIN码',
+                  icon: Icon(Icons.code),
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.camera_alt),
+                    onPressed: () async {
+                      await scan();
+                      setState(() {
+                        _textController.text = _barcode;
+                      });
+                      _submit();
+                    },
                   ),
                 ),
               ),
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 12.0),
-                child: TextFormField(
-                  enabled: _fieldState,
-                  validator: (input){
-                    var r= RegExp(r'[\u4e00-\u9fa5\w]+$');
-                    if(!r.hasMatch(input)){
-                      return '请输入标识';
-                    }
-                    return null;
-                  },
-                  onSaved: (input)=>_mark = input,
-                  decoration: InputDecoration(
-                    labelText: '标识',
-                    icon: Icon(Icons.room),
-                  ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.0),
+              child: TextFormField(
+                enabled: _fieldState,
+                validator: (input) {
+                  var r = RegExp(r'[\u4e00-\u9fa5\w@]+$');
+                  if (input.isEmpty || !r.hasMatch(input)) {
+                    return '请输入道位';
+                  }
+                  return null;
+                },
+                onSaved: (input) => _mark = input,
+                decoration: InputDecoration(
+                  labelText: '道位',
+                  icon: Icon(Icons.room),
                 ),
               ),
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 12.0),
-                child: TextFormField(
-                  enabled: _fieldState,
-                  validator: (input){
-                    var r= RegExp(r'\d+$');
-                    if(!r.hasMatch(input)){
-                      return '请输入数字序号';
-                    }
-                    return null;
-                  },
-                  onSaved: (input)=>_num = int.parse(input),
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: '序号',
-                    icon: Icon(Icons.confirmation_number),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 24.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: <Widget>[
-                    RaisedButton(
-                      onPressed: _submit,
-                      child: const Text('提交'),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.all(10.0),
-                    ),
-                    RaisedButton(
-                      onPressed: _cancel,
-                      child: const Text('取消'),
-                    ),
-                  ],
-                ),
-              )
-            ],
-          ),
+            ),
+//              Padding(
+//                padding: EdgeInsets.symmetric(vertical: 12.0),
+//                child: TextFormField(
+//                  enabled: _fieldState,
+//                  validator: (input){
+//                    var r= RegExp(r'\d+$');
+//                    if(!r.hasMatch(input)){
+//                      return '请输入数字序号';
+//                    }
+//                    return null;
+//                  },
+//                  onSaved: (input)=>_num = int.parse(input),
+//                  keyboardType: TextInputType.number,
+//                  decoration: InputDecoration(
+//                    labelText: '序号',
+//                    icon: Icon(Icons.confirmation_number),
+//                  ),
+//                ),
+//              ),
+          ],
         ),
-      ]),
-    );
+      );
   }
 
-  void _submit() async{
+  void _submit() async {
     if (_formKey.currentState.validate()) {
       _formKey.currentState.save();
-      await carRepo.save(Car(warehouseId: _selected,vin: _vin,mark: _mark,num: _num));
-      print("----------------------->${carRepo.all()}");
+      int _num = await _carRepo.count(_selected, _mark);
+      Car _add =
+          Car(warehouseId: _selected, vin: _vin, mark: _mark, num: _num + 1);
+      int result = await _carRepo.save(_add);
+      if (result > 0) {
+        await playMusic();
+      }
+      setState(() {
+        latest.add(_add);
+      });
     }
-  }
-
-  void _cancel() {
-    setState(() {
-      _formKey.currentState.reset();
-      _textController.text = '';
-      _selected = null;
-      _fieldState = false;
-    });
   }
 
   Future scan() async {
@@ -201,5 +246,9 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
     } catch (e) {
       setState(() => this._barcode = 'Unknown error: $e');
     }
+  }
+
+  Future<void> playMusic() async {
+    await _player.play(_successAudio);
   }
 }

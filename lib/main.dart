@@ -4,6 +4,8 @@ import 'src/widgets/add_warehouse.dart';
 import 'src/widgets/carlist.dart';
 import 'src/widgets/settings.dart';
 import 'src/widgets/search.dart';
+import 'src/widgets/search_file.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 void main() {
@@ -78,6 +80,12 @@ class _HomePageState extends State<HomePage>
         return null;
       case 1:
         return [
+          IconButton(icon: Icon(Icons.file_upload), onPressed: () async{
+            String path = await FilePicker.getFilePath();
+            Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+              return FileSearch(filePath: path,);
+            }));
+          }),
         IconButton(
             icon: Icon(Icons.settings),
             onPressed: () {

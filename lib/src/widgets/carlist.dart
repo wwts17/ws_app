@@ -31,16 +31,17 @@ class _CarListViewState extends State<CarListView> with SingleTickerProviderStat
       builder: (context,snap){
         if(snap.connectionState==ConnectionState.done&&snap.data!=null){
           List<Widget> widgets = List();
-          widgets.add(Text('Total：${snap.data.length}',style: TextStyle(fontSize: 20.0),));
+          widgets.add(Text('扫描总数：${snap.data.length}',style: TextStyle(fontSize: 20.0),));
           for (int i=0;i<snap.data.length;i++) {
             widgets.add(Card(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   Text('${i+1}/${snap.data.length}'),
-                  Text('ID：${snap.data[i].id}'),
-                  Text('车辆识别码：${snap.data[i].vin}'),
+                  //Text('ID：${snap.data[i].id}'),
+                  Text('VIN码：${snap.data[i].vin}'),
                   FutureBuilder<Warehouse>(
-                    future: _whRepo.queryById(snap.data[i].id),
+                    future: _whRepo.queryById(snap.data[i].warehouseId),
                     builder: (context,snap2){
                       if(snap2.connectionState==ConnectionState.done){
                         return Text('仓库：${snap2.data.name}');
@@ -49,10 +50,9 @@ class _CarListViewState extends State<CarListView> with SingleTickerProviderStat
                       }
                     },
                   ),
-                  Text('标识：${snap.data[i].mark}'),
+                  Text('道位：${snap.data[i].mark}'),
                   Text('序号：${snap.data[i].num}'),
                   Text('创建时间：${snap.data[i].createdAt}'),
-                  Text('更新时间：${snap.data[i].updatedAt}'),
                 ],
               ),
             ));
