@@ -50,18 +50,22 @@ class CarRepository {
   final _table = 'car';
 
   Future<int> save(Car car) async{
-    final client = await SQLiteClient().getConn();
-    if (car.id==null){
-      return await client.insert(_table, {"warehouse_id":car.warehouseId,"vin":car.vin,"mark":car.mark,"num":car.num});
+    try{
+      final client = await SQLiteClient().getConn();
+      if (car.id==null){
+        return await client.insert(_table, {"warehouse_id":car.warehouseId,"vin":car.vin,"mark":car.mark,"num":car.num});
+      }
+      List li = await client.query(_table,where: "id = ?",whereArgs: [car.id]);
+      if (li.isEmpty){
+        throw DataException("not found data");
+      }
+      Car carDB = Car.fromMap(li[0]);
+      return await client.update(_table, {"warehouse_id": car.warehouseId,
+        "mark": car.mark,
+        "num": car.num,},where: 'id = ?',whereArgs: [carDB.id]);
+    }on DatabaseException catch(e){
+      return -1;
     }
-    List li = await client.query(_table,where: "id = ?",whereArgs: [car.id]);
-    if (li.isEmpty){
-      throw DataException("not found data");
-    }
-    Car carDB = Car.fromMap(li[0]);
-    return await client.update(_table, {"warehouse_id": car.warehouseId,
-      "mark": car.mark,
-      "num": car.num,},where: 'id = ?',whereArgs: [carDB.id]);
   }
 
   Future<List<Car>> all() async {

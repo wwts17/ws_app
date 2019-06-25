@@ -8,6 +8,7 @@ import 'src/widgets/search_file.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+
 void main() {
   runApp(MyApp());
 }
@@ -88,7 +89,14 @@ class _HomePageState extends State<HomePage>
                   return null;
                 }
                 if(!path.contains('.xlsx')){
-                  return null;
+                  return showDialog(
+                    context: context,
+                    builder: (context){
+                      return AlertDialog(
+                        content: Text('仅支持xlsx文件',style: TextStyle(color: Colors.red)),
+                      );
+                    },
+                  );
                 }
                 Navigator.of(context)
                     .push(MaterialPageRoute(builder: (context) {

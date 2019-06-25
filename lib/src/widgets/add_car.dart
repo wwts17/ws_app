@@ -12,6 +12,7 @@ class AddCar extends StatefulWidget {
 }
 
 const _successAudio = 'success.mp3';
+const _errorAudio = 'error.mp3';
 
 class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
   AnimationController _controller;
@@ -36,6 +37,7 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
 
   loadData() async {
     await _player.load(_successAudio);
+    await _player.load(_errorAudio);
   }
 
   @override
@@ -188,25 +190,6 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
                 ),
               ),
             ),
-//              Padding(
-//                padding: EdgeInsets.symmetric(vertical: 12.0),
-//                child: TextFormField(
-//                  enabled: _fieldState,
-//                  validator: (input){
-//                    var r= RegExp(r'\d+$');
-//                    if(!r.hasMatch(input)){
-//                      return '请输入数字序号';
-//                    }
-//                    return null;
-//                  },
-//                  onSaved: (input)=>_num = int.parse(input),
-//                  keyboardType: TextInputType.number,
-//                  decoration: InputDecoration(
-//                    labelText: '序号',
-//                    icon: Icon(Icons.confirmation_number),
-//                  ),
-//                ),
-//              ),
           ],
         ),
       );
@@ -220,11 +203,21 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
           Car(warehouseId: _selected, vin: _vin, mark: _mark, num: _num + 1);
       int result = await _carRepo.save(_add);
       if (result > 0) {
-        await playMusic();
+        await _playMusic(_successAudio);
+        setState(() {
+          latest.add(_add);
+        });
+      }else if(result==-1){
+        await _playMusic(_errorAudio);
+       return showDialog(
+          context: context,
+          builder: (context){
+            return AlertDialog(
+              content: Text('错误提示：重复的VIN码',style: TextStyle(color: Colors.red),),
+            );
+          },
+        );
       }
-      setState(() {
-        latest.add(_add);
-      });
     }
   }
 
@@ -248,7 +241,7 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
     }
   }
 
-  Future<void> playMusic() async {
-    await _player.play(_successAudio);
+  Future<void> _playMusic(String name) async {
+    await _player.play(name);
   }
 }
