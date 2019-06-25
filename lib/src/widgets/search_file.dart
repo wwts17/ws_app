@@ -17,6 +17,7 @@ class _FileSearchState extends State<FileSearch>
   static List<Map<String, dynamic>> maps;
   AnimationController _controller;
   final String filePath;
+  static List<Map<String,dynamic>> _searchResult;
 
   _FileSearchState({@required this.filePath});
 
@@ -39,6 +40,18 @@ class _FileSearchState extends State<FileSearch>
     return Scaffold(
         appBar: AppBar(
           title: TextField(
+            onChanged: (input){
+              List<Map<String,dynamic>> list = List();
+              for(int i=0;i<maps.length;i++){
+                String vin = maps[i]["VIN码"].toString();
+                if (vin.contains(input)){
+                  list.add(maps[i]);
+                }
+              }
+              setState(() {
+                _searchResult = list;
+              });
+            },
             decoration: InputDecoration(
               icon: Icon(
                 FontAwesomeIcons.search,
@@ -53,14 +66,29 @@ class _FileSearchState extends State<FileSearch>
             ),
           ),
         ),
-        body: ListView(
-          children: _buildView(maps),
-        ));
+        body: ListView.builder(itemCount:length(),itemBuilder: (context,idx){
+          List<Widget> buildView;
+          if(_searchResult==null||_searchResult.isEmpty){
+            buildView = _buildView(maps);
+          }else{
+            buildView =_buildView(_searchResult);
+          }
+          return buildView[idx];
+        }));
+  }
+
+  int length (){
+    if(_searchResult==null||_searchResult.isEmpty){
+      return maps.length+1;
+    }else{
+      return _searchResult.length+1;
+    }
   }
 
   List<Widget> _buildView(List<Map<String, dynamic>> maps) {
     List<Widget> fin = [];
     fin.add(Text('总数:${maps.length}',style:TextStyle(fontSize: 20.0,fontWeight: FontWeight.w500)));
+    //fields list
     var keys = maps[0].keys.toList();
     for (int i = 0; i < maps.length; i++) {
       var column = maps[i];

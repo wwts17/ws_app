@@ -74,25 +74,38 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  List<Widget> _buildActions(int index){
-    switch (index){
+  List<Widget> _buildActions(int index) {
+    switch (index) {
       case 0:
         return null;
       case 1:
         return [
-          IconButton(icon: Icon(Icons.file_upload), onPressed: () async{
-            String path = await FilePicker.getFilePath();
-            Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-              return FileSearch(filePath: path,);
-            }));
-          }),
-        IconButton(
-            icon: Icon(Icons.settings),
-            onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-                return SettingPage();
-              }));
-            }),
+          IconButton(
+              icon: Icon(Icons.file_upload),
+              onPressed: () async {
+                String path= await FilePicker.getFilePath();
+                if(path==null||path.isEmpty){
+                  return null;
+                }
+                if(!path.contains('.xlsx')){
+                  return null;
+                }
+                Navigator.of(context)
+                    .push(MaterialPageRoute(builder: (context) {
+                  return FileSearch(
+                    filePath: path,
+                  );
+                }));
+              }),
+
+          IconButton(
+              icon: Icon(Icons.settings),
+              onPressed: () {
+                Navigator.of(context)
+                    .push(MaterialPageRoute(builder: (context) {
+                  return SettingPage();
+                }));
+              }),
         ];
       default:
         return null;
@@ -116,7 +129,7 @@ class _HomePageState extends State<HomePage>
         return IconButton(
             icon: Icon(Icons.search),
             onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (context){
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) {
                 return SearchPage();
               }));
             });

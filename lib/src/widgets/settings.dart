@@ -1,8 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:spreadsheet_decoder/spreadsheet_decoder.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:csv/csv.dart';
 import 'package:gbk2utf8/gbk2utf8.dart';
@@ -56,10 +54,6 @@ class _SettingPageState extends State<SettingPage>
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 30.0),
                 child: Text(_openPath),
-              ),
-              RaisedButton(
-                child: Text('导入数据'),
-                onPressed: _inputData,
               ),
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 30.0),
@@ -128,22 +122,6 @@ class _SettingPageState extends State<SettingPage>
     return rows;
   }
 
-  void _inputData() async {
-    var file = await FilePicker.getFile();
-    var decoder = new SpreadsheetDecoder.decodeBytes(file.readAsBytesSync());
-    var table = decoder.tables['Sheet1'];
-    var columnName = table.rows[0];
-    List<Map<String,dynamic>> alls = List();
-    for(int i=1;i<table.rows.length;i++){
-      var row = table.rows[i];
-      Map<String,dynamic> gen = {};
-      for(int j=0;j<columnName.length;j++){
-        gen.addAll({columnName[j]:row[j]});
-      }
-      alls.add(gen);
-    }
-    alls.forEach((f)=>print('${f}'));
-  }
 
   void _deleteData() {
     showDialog(
