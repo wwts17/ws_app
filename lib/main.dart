@@ -5,9 +5,10 @@ import 'src/widgets/carlist.dart';
 import 'src/widgets/settings.dart';
 import 'src/widgets/search.dart';
 import 'src/widgets/search_file.dart';
+import 'src/widgets/shiftcarpage.dart';
+import 'src/widgets/shiftcar_search.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
 
 void main() {
   runApp(MyApp());
@@ -19,7 +20,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: '中集车辆',
       theme: ThemeData(
-        primarySwatch: Colors.green,
+        primarySwatch: Colors.blue,
       ),
       home: HomePage(),
     );
@@ -31,22 +32,17 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
-  AnimationController _controller;
-
-  static final tabs = ["扫描", "数据"];
+class _HomePageState extends State<HomePage> {
+  static final tabs = ["扫描", "数据", "提车"];
   int _currentIndex = 0;
 
   @override
   void initState() {
-    _controller = AnimationController(vsync: this);
     super.initState();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
     super.dispose();
   }
 
@@ -69,6 +65,8 @@ class _HomePageState extends State<HomePage>
           BottomNavigationBarItem(icon: Icon(Icons.add), title: Text(tabs[0])),
           BottomNavigationBarItem(
               icon: Icon(FontAwesomeIcons.database), title: Text(tabs[1])),
+          BottomNavigationBarItem(
+              icon: Icon(FontAwesomeIcons.car), title: Text(tabs[2])),
         ],
       ),
       body: _buildPage(_currentIndex),
@@ -84,16 +82,17 @@ class _HomePageState extends State<HomePage>
           IconButton(
               icon: Icon(Icons.file_upload),
               onPressed: () async {
-                String path= await FilePicker.getFilePath();
-                if(path==null||path.isEmpty){
+                String path = await FilePicker.getFilePath();
+                if (path == null || path.isEmpty) {
                   return null;
                 }
-                if(!path.contains('.xlsx')){
+                if (!path.contains('.xlsx')) {
                   return showDialog(
                     context: context,
-                    builder: (context){
+                    builder: (context) {
                       return AlertDialog(
-                        content: Text('仅支持xlsx文件',style: TextStyle(color: Colors.red)),
+                        content: Text('仅支持xlsx文件',
+                            style: TextStyle(color: Colors.red)),
                       );
                     },
                   );
@@ -105,7 +104,6 @@ class _HomePageState extends State<HomePage>
                   );
                 }));
               }),
-
           IconButton(
               icon: Icon(Icons.settings),
               onPressed: () {
@@ -115,6 +113,18 @@ class _HomePageState extends State<HomePage>
                 }));
               }),
         ];
+      case 2:
+        return [
+          IconButton(
+              icon: Icon(Icons.settings),
+              onPressed: () {
+                Navigator.of(context)
+                    .push(MaterialPageRoute(builder: (context) {
+                  return SettingPage();
+                }));
+              }),
+        ];
+
       default:
         return null;
     }
@@ -138,7 +148,15 @@ class _HomePageState extends State<HomePage>
             icon: Icon(Icons.search),
             onPressed: () {
               Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-                return SearchPage();
+                return CarSearchPage();
+              }));
+            });
+      case 2:
+        return IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+                return ShiftCarSearchPage();
               }));
             });
       default:
@@ -152,8 +170,10 @@ class _HomePageState extends State<HomePage>
         return AddCar();
       case 1:
         return CarListView();
+      case 2:
+        return ShiftCarPage();
       default:
-        return AddCar();
+        return Scaffold();
     }
   }
 }

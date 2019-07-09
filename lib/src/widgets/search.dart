@@ -3,12 +3,12 @@ import '../car.dart';
 import '../warehouse.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class SearchPage extends StatefulWidget {
+class CarSearchPage extends StatefulWidget {
   @override
-  _SearchPageState createState() => _SearchPageState();
+  _CarSearchPageState createState() => _CarSearchPageState();
 }
 
-class _SearchPageState extends State<SearchPage>
+class _CarSearchPageState extends State<CarSearchPage>
     with SingleTickerProviderStateMixin {
   final _carRepo = CarRepository();
   final _whRepo = WarehouseRepository();

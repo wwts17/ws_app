@@ -44,6 +44,15 @@ class SQLiteClient {
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
           ''');
+          await db.execute('''
+                  CREATE TABLE shift_car(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        vin VARCHAR(50) NOT NULL,
+        bar_code VARCHAR(50) NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+          ''');
         });
       } catch (_) {}
       return _db;
@@ -89,6 +98,18 @@ class SQLiteClient {
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
       ''');
+      batch.execute('''
+      DROP TABLE IF EXISTS shift_car;
+      ''');
+      await batch.execute('''
+                  CREATE TABLE shift_car(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        vin VARCHAR(50) NOT NULL,
+        bar_code VARCHAR(50) NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+          ''');
       await batch.commit();
     }
   }

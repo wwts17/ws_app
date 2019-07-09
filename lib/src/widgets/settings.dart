@@ -5,7 +5,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:csv/csv.dart';
 import 'package:gbk2utf8/gbk2utf8.dart';
 
-
 import '../database.dart';
 
 class SettingPage extends StatefulWidget {
@@ -17,8 +16,8 @@ class _SettingPageState extends State<SettingPage>
     with SingleTickerProviderStateMixin {
   AnimationController _controller;
   final _formKey = GlobalKey<FormState>();
-  String _outputPath = '';
-  String _openPath = '';
+  String _outputCarPath = '';
+  String _outputShiftCarPath = '';
 
   @override
   void initState() {
@@ -45,15 +44,19 @@ class _SettingPageState extends State<SettingPage>
             children: <Widget>[
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 30.0),
-                child: Text(_outputPath),
+                child: Text(_outputCarPath),
               ),
               RaisedButton(
-                child: Text('导出数据'),
-                onPressed: _outputData,
+                child: Text('导出扫描入库数据'),
+                onPressed: _outputCarData,
               ),
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 30.0),
-                child: Text(_openPath),
+                child: Text(_outputShiftCarPath),
+              ),
+              RaisedButton(
+                child: Text('导出提车数据'),
+                onPressed: _outputShiftCarData,
               ),
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 30.0),
@@ -69,18 +72,24 @@ class _SettingPageState extends State<SettingPage>
     );
   }
 
-  void _outputData() async {
+  void _outputCarData() async {
     List<List> buffer = await _exportCSVCarList();
+    if (buffer == null || buffer.isEmpty) {
+      setState(() {
+        _outputCarPath = "数据库暂无数据可导出";
+      });
+      return;
+    }
     await _requestPermissions();
     final directory = await getExternalStorageDirectory();
     DateTime currentTime = DateTime.now();
     String timestamp =
         "${currentTime.year}${currentTime.month}${currentTime.day}${currentTime.hour}${currentTime.minute}${currentTime.second}";
-    File file = File('${directory.path}/Documents/入库记录$timestamp.csv');
+    File file = File('${directory.path}/Documents/扫描入库记录$timestamp.csv');
     String csv = const ListToCsvConverter().convert(buffer);
     await file.writeAsBytes(gbk.encode(csv));
     setState(() {
-      _outputPath = file.path;
+      _outputCarPath = file.path;
     });
   }
 
@@ -93,6 +102,27 @@ class _SettingPageState extends State<SettingPage>
           await PermissionHandler()
               .requestPermissions([PermissionGroup.storage]);
     }
+  }
+
+  void _outputShiftCarData() async {
+    List<List> buffer = await _exportCSVShiftCarList();
+    if (buffer == null || buffer.isEmpty) {
+      setState(() {
+        _outputShiftCarPath = "数据库暂无数据可导出";
+      });
+      return;
+    }
+    await _requestPermissions();
+    final directory = await getExternalStorageDirectory();
+    DateTime currentTime = DateTime.now();
+    String timestamp =
+        "${currentTime.year}${currentTime.month}${currentTime.day}${currentTime.hour}${currentTime.minute}${currentTime.second}";
+    File file = File('${directory.path}/Documents/提车记录$timestamp.csv');
+    String csv = const ListToCsvConverter().convert(buffer);
+    await file.writeAsBytes(gbk.encode(csv));
+    setState(() {
+      _outputShiftCarPath = file.path;
+    });
   }
 
   Future<List<List>> _exportCSVCarList() async {
@@ -108,20 +138,48 @@ class _SettingPageState extends State<SettingPage>
     FROM car,warehouse WHERE car.warehouse_id = warehouse.id ORDER BY 扫描时间;
     ''';
     var result = await client.rawQuery(sql);
+
     List<List<dynamic>> rows = List();
-    // [[field1, field2, field3, ...],[ column1.v1, column1.v2, column1.v3 ...], ...]
-    var field = result[0].keys.toList();
-    rows.add(field);
-    result.forEach((f) {
-      var row = [];
-      for (int i = 0; i < field.length; i++) {
-        row.add(f[field[i]]);
-      }
-      rows.add(row);
-    });
+    if (result.isNotEmpty) {
+      // [[field1, field2, field3, ...],[ column1.v1, column1.v2, column1.v3 ...], ...]
+      var field = result[0].keys.toList();
+      rows.add(field);
+      result.forEach((f) {
+        var row = [];
+        for (int i = 0; i < field.length; i++) {
+          row.add(f[field[i]]);
+        }
+        rows.add(row);
+      });
+    }
     return rows;
   }
 
+  Future<List<List>> _exportCSVShiftCarList() async {
+    final client = await SQLiteClient().getConn();
+    final sql = '''
+    SELECT 
+    vin AS VIN码,
+    bar_code AS 自编条码,
+    created_at AS 扫描时间
+    FROM shift_car ORDER BY created_at desc;
+    ''';
+    var result = await client.rawQuery(sql);
+    List<List<dynamic>> rows = List();
+    if(result.isNotEmpty){
+      // [[field1, field2, field3, ...],[ column1.v1, column1.v2, column1.v3 ...], ...]
+      var field = result[0].keys.toList();
+      rows.add(field);
+      result.forEach((f) {
+        var row = [];
+        for (int i = 0; i < field.length; i++) {
+          row.add(f[field[i]]);
+        }
+        rows.add(row);
+      });
+    }
+    return rows;
+  }
 
   void _deleteData() {
     showDialog(
@@ -165,7 +223,7 @@ class _SettingPageState extends State<SettingPage>
                 padding: EdgeInsets.symmetric(horizontal: 20.0),
                 child: RaisedButton(
                   onPressed: () {
-                    Navigator.of(context).pop();
+                    Navigator.of(context).pop(false);
                   },
                   child: Text('取消'),
                   color: Colors.green,
@@ -178,6 +236,7 @@ class _SettingPageState extends State<SettingPage>
                   onPressed: () async {
                     if (_formKey.currentState.validate()) {
                       await SQLiteClient().clean();
+                      Navigator.of(context).pop(true);
                     }
                   },
                   child: Text('确认'),
