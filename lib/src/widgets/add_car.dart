@@ -23,7 +23,7 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
   final _textController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _fieldState = false;
-  String _barcode = '';
+  String _scanResult = '';
   int _selected;
   String _mark, _vin;
   static List<Car> latest = [];
@@ -164,7 +164,7 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
                     onPressed: () async {
                       await scan();
                       setState(() {
-                        _textController.text = _barcode;
+                        _textController.text = _scanResult;
                       });
                       _submit();
                     },
@@ -190,6 +190,7 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
                 ),
               ),
             ),
+            RaisedButton(onPressed: _submit,child: Text('提交'),)
           ],
         ),
       );
@@ -206,6 +207,7 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
         await _playMusic(_successAudio);
         setState(() {
           latest.add(_add);
+          _textController.text = '';
         });
       }else if(result==-1){
         await _playMusic(_errorAudio);
@@ -224,20 +226,20 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
   Future scan() async {
     try {
       String barcode = await BarcodeScanner.scan();
-      setState(() => this._barcode = barcode);
+      setState(() => this._scanResult = barcode);
     } on PlatformException catch (e) {
       if (e.code == BarcodeScanner.CameraAccessDenied) {
         setState(() {
-          this._barcode = 'The user did not grant the camera permission!';
+          this._scanResult = 'The user did not grant the camera permission!';
         });
       } else {
-        setState(() => this._barcode = 'Unknown error: $e');
+        setState(() => this._scanResult = 'Unknown error: $e');
       }
     } on FormatException {
-      setState(() => this._barcode =
+      setState(() => this._scanResult =
           'null (User returned using the "back"-button before scanning anything. Result)');
     } catch (e) {
-      setState(() => this._barcode = 'Unknown error: $e');
+      setState(() => this._scanResult = 'Unknown error: $e');
     }
   }
 

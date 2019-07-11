@@ -20,6 +20,7 @@ dependencies:
   csv: ^4.0.3
   gbk2utf8: ^1.0.1
   audioplayers: ^0.13.0
+  flutter_launcher_icons: ^0.7.2+1
 
   spreadsheet_decoder: ^1.0.1
 
@@ -34,3 +35,7 @@ flutter:
     - assets/success.mp3
     - assets/error.mp3
 
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon.jpg"

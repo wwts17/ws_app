@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:audioplayers/audio_cache.dart';
+import 'package:barcode_scan/barcode_scan.dart';
+import 'package:flutter/services.dart';
 
 import '../shiftcar.dart';
 
@@ -16,10 +18,12 @@ class _ShiftCarPageState extends State<ShiftCarPage> {
   final _shiftCarRepo = ShiftCarRepository();
   final _pageController = PageController();
   final _formKey = GlobalKey<FormState>();
+  final _vinTextController = TextEditingController();
+  final _barCodeTextController = TextEditingController();
 
   static AudioCache _player = AudioCache();
 
-  String _vin, _barCode;
+  String _vin, _barCode, _scanResult;
 
   @override
   void initState() {
@@ -33,6 +37,8 @@ class _ShiftCarPageState extends State<ShiftCarPage> {
 
   @override
   void dispose() {
+    _vinTextController.dispose();
+    _barCodeTextController.dispose();
     super.dispose();
   }
 
@@ -50,6 +56,7 @@ class _ShiftCarPageState extends State<ShiftCarPage> {
                   Padding(
                       padding: EdgeInsets.symmetric(vertical: 12.0),
                       child: TextFormField(
+                        controller: _vinTextController,
                         validator: (input) {
                           var r = RegExp(r'^[A-Za-z0-9]{17}$');
                           if (input.isEmpty || !r.hasMatch(input)) {
@@ -61,11 +68,22 @@ class _ShiftCarPageState extends State<ShiftCarPage> {
                         decoration: InputDecoration(
                           icon: Icon(FontAwesomeIcons.code),
                           labelText: 'VIN码',
+                          suffixIcon: IconButton(
+                            icon: Icon(Icons.camera_alt),
+                            onPressed: () async {
+                              await scan();
+                              setState(() {
+                                _vinTextController.text = _scanResult;
+                              });
+                              _submit();
+                            },
+                          ),
                         ),
                       )),
                   Padding(
                     padding: EdgeInsets.symmetric(vertical: 12.0),
                     child: TextFormField(
+                      controller: _barCodeTextController,
                       validator: (input) {
                         if (input.isEmpty) {
                           return "请输入自编条码";
@@ -76,6 +94,16 @@ class _ShiftCarPageState extends State<ShiftCarPage> {
                       decoration: InputDecoration(
                         icon: Icon(FontAwesomeIcons.barcode),
                         labelText: '自编条码',
+                        suffixIcon: IconButton(
+                          icon: Icon(Icons.camera_alt),
+                          onPressed: () async {
+                            await scan();
+                            setState(() {
+                              _barCodeTextController.text = _scanResult;
+                            });
+                            _submit();
+                          },
+                        ),
                       ),
                     ),
                   ),
@@ -128,6 +156,50 @@ class _ShiftCarPageState extends State<ShiftCarPage> {
         )
       ],
     );
+  }
+
+  void _submit() async {
+    if (_formKey.currentState.validate()) {
+      _formKey.currentState.save();
+      var result =
+          await _shiftCarRepo.save(ShiftCar(vin: _vin, barCode: _barCode));
+      if (result > 0) {
+        await _playMusic(_successAudio);
+      } else if (result == -1) {
+        await _playMusic(_errorAudio);
+        return showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              content: Text(
+                '添加失败',
+                style: TextStyle(color: Colors.red),
+              ),
+            );
+          },
+        );
+      }
+    }
+  }
+
+  Future scan() async {
+    try {
+      String barcode = await BarcodeScanner.scan();
+      setState(() => this._scanResult = barcode);
+    } on PlatformException catch (e) {
+      if (e.code == BarcodeScanner.CameraAccessDenied) {
+        setState(() {
+          this._scanResult = 'The user did not grant the camera permission!';
+        });
+      } else {
+        setState(() => this._scanResult = 'Unknown error: $e');
+      }
+    } on FormatException {
+      setState(() => this._scanResult =
+          'null (User returned using the "back"-button before scanning anything. Result)');
+    } catch (e) {
+      setState(() => this._scanResult = 'Unknown error: $e');
+    }
   }
 
   Future<void> _playMusic(String name) async {
