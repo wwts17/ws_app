@@ -32,6 +32,11 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
   void initState() {
     loadData();
     _controller = AnimationController(vsync: this);
+    _textController.addListener((){
+        if(_textController.text != null && _textController.text.isNotEmpty){
+          _submit();
+        }
+    });
     super.initState();
   }
 
@@ -190,7 +195,6 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
                 ),
               ),
             ),
-            RaisedButton(onPressed: _submit,child: Text('提交'),)
           ],
         ),
       );
