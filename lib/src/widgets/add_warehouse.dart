@@ -38,6 +38,7 @@ class _AddWarehouseState extends State<AddWarehouse>
               child:Column(
                 children: <Widget>[
                   TextFormField(
+                    enableInteractiveSelection: false,
                     validator: (input){
                       // input only word, number, _
                       var r= RegExp(r'[\u4e00-\u9fa5\w]+$');

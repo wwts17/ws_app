@@ -40,6 +40,7 @@ class _FileSearchState extends State<FileSearch>
     return Scaffold(
         appBar: AppBar(
           title: TextField(
+            enableInteractiveSelection: false,
             onChanged: (input){
               List<Map<String,dynamic>> list = List();
               for(int i=0;i<maps.length;i++){

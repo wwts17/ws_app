@@ -4,6 +4,7 @@ import 'package:audioplayers/audio_cache.dart';
 import 'package:barcode_scan/barcode_scan.dart';
 import 'package:flutter/services.dart';
 
+
 import '../shiftcar.dart';
 
 const _successAudio = 'success.mp3';
@@ -56,6 +57,7 @@ class _ShiftCarPageState extends State<ShiftCarPage> {
                   Padding(
                       padding: EdgeInsets.symmetric(vertical: 12.0),
                       child: TextFormField(
+                        enableInteractiveSelection: false,
                         controller: _vinTextController,
                         validator: (input) {
                           var r = RegExp(r'^[A-Za-z0-9]{17}$');
@@ -83,6 +85,7 @@ class _ShiftCarPageState extends State<ShiftCarPage> {
                   Padding(
                     padding: EdgeInsets.symmetric(vertical: 12.0),
                     child: TextFormField(
+                      enableInteractiveSelection: false,
                       controller: _barCodeTextController,
                       validator: (input) {
                         if (input.isEmpty) {
@@ -142,7 +145,7 @@ class _ShiftCarPageState extends State<ShiftCarPage> {
                             Text('${idx + 1}/${snap.data.length}'),
                             Text('VIN码:${snap.data[idx].vin}'),
                             Text('自编条码:${snap.data[idx].barCode}'),
-                            Text('扫描时间:${snap.data[idx].createdAt}'),
+                            Text('扫描时间:${handleTime(snap.data[idx].updatedAt)}'),
                           ],
                         ),
                       );
@@ -156,6 +159,11 @@ class _ShiftCarPageState extends State<ShiftCarPage> {
         )
       ],
     );
+  }
+
+  String handleTime(String timeStr){
+    DateTime time = DateTime.parse(timeStr);
+    return time.add(Duration(hours: 8)).toString();
   }
 
   void _submit() async {

@@ -13,8 +13,6 @@ class _CarSearchPageState extends State<CarSearchPage>
   final _carRepo = CarRepository();
   final _whRepo = WarehouseRepository();
   final _textController= TextEditingController();
-//  int _currentIndex = 0;
-//  List _searchResult = [];
   String _vin = '';
 
   @override

@@ -19,7 +19,8 @@ const _errorAudio = 'error.mp3';
 class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
   AnimationController _controller;
 
-  FocusNode focusNode;
+  FocusNode _focusNode;
+  FocusNode _focusNode2;
   static AudioCache _player = AudioCache();
   final _whRepo = WarehouseRepository();
   final _carRepo = CarRepository();
@@ -35,14 +36,16 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
 
   @override
   void initState() {
-    focusNode = FocusNode();
+    _focusNode = FocusNode();
+    _focusNode2 = FocusNode();
     loadData();
     _controller = AnimationController(vsync: this);
 
     _textController2.text = saveSate["mark"];
-    _textController.addListener(() {
-      if (_textController.text != null && _textController.text.isNotEmpty) {
-        _submit();
+    _textController.addListener(() async{
+      if (_textController.text.length!=0) {
+        await _submit();
+        FocusScope.of(context).requestFocus(_focusNode2);
       }
     });
     super.initState();
@@ -58,7 +61,8 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
     _textController2.dispose();
     _textController.dispose();
     _controller.dispose();
-    focusNode.dispose();
+    _focusNode2.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -162,12 +166,10 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
           Padding(
             padding: EdgeInsets.symmetric(vertical: 12.0),
             child: TextFormField(
+              enableInteractiveSelection: false,
               controller: _textController,
-              focusNode: focusNode,
+              focusNode: _focusNode,
               autofocus: _fieldState,
-              onFieldSubmitted: (_) {
-                FocusScope.of(context).requestFocus(focusNode);
-              },
               enabled: _fieldState,
               validator: (input) {
                 var r = RegExp(r'^[A-Za-z0-9]{17}$');
@@ -196,8 +198,10 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
           Padding(
             padding: EdgeInsets.symmetric(vertical: 12.0),
             child: TextFormField(
+              enableInteractiveSelection: false,
               controller: _textController2,
               enabled: _fieldState,
+              focusNode: _focusNode2,
               validator: (input) {
                 var r = RegExp(r'[\u4e00-\u9fa5\w@]+$');
                 if (input.isEmpty || !r.hasMatch(input)) {
@@ -220,7 +224,7 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
     );
   }
 
-  void _submit() async {
+  Future<void> _submit() async {
     if (_formKey.currentState.validate()) {
       _formKey.currentState.save();
       int _num = await _carRepo.count(_selected, _mark);

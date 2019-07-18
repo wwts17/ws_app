@@ -29,6 +29,7 @@ class _ShiftCarSearchPageState extends State<ShiftCarSearchPage>  {
     return Scaffold(
       appBar: AppBar(
         title: TextField(
+          enableInteractiveSelection: false,
           controller: _textController,
           decoration: InputDecoration(
             icon: Icon(FontAwesomeIcons.search,color: Colors.white,),
