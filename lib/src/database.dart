@@ -48,7 +48,7 @@ class SQLiteClient {
                   CREATE TABLE shift_car(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         vin VARCHAR(50) NOT NULL,
-        bar_code VARCHAR(50) NOT NULL,
+        bar_code VARCHAR(50) DEFAULT NULL,
         created_at DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
@@ -70,7 +70,26 @@ class SQLiteClient {
   }
 
 
-  Future<void> clean() async{
+  Future<void> cleanWarehouse() async{
+    await getConn();
+    if(_db!=null){
+      var batch = _db.batch();
+      batch.execute('''
+      DROP TABLE IF EXISTS warehouse;
+      ''');
+      batch.execute('''
+       CREATE TABLE warehouse(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name VARCHAR(50) UNIQUE NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      ''');
+      await batch.commit();
+    }
+  }
+
+  Future<void> cleanCars() async{
     await getConn();
     if(_db!=null){
       var batch = _db.batch();
@@ -87,25 +106,23 @@ class SQLiteClient {
         created_at DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);
       ''');
-      batch.execute('''
-      DROP TABLE IF EXISTS warehouse;
-      ''');
-      batch.execute('''
-       CREATE TABLE warehouse(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name VARCHAR(50) UNIQUE NOT NULL,
-        created_at DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
-        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-      ''');
+      await batch.commit();
+    }
+  }
+
+  Future<void> cleanShiftCars() async{
+    await getConn();
+    if(_db!=null){
+      var batch = _db.batch();
+
       batch.execute('''
       DROP TABLE IF EXISTS shift_car;
       ''');
-      await batch.execute('''
+      batch.execute('''
                   CREATE TABLE shift_car(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         vin VARCHAR(50) NOT NULL,
-        bar_code VARCHAR(50) NOT NULL,
+        bar_code VARCHAR(50) DEFAULT NULL,
         created_at DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );

@@ -161,8 +161,22 @@ class _ShiftCarPageState extends State<ShiftCarPage> {
   void _submit() async {
     if (_formKey.currentState.validate()) {
       _formKey.currentState.save();
+      var sc = await _shiftCarRepo.findByVin(_vin);
+      if (sc==null){
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              content: Text('没有此VIN码',
+                  style: TextStyle(color: Colors.red)),
+            );
+          },
+        );
+        _playMusic(_errorAudio);
+        return null;
+      }
       var result =
-          await _shiftCarRepo.save(ShiftCar(vin: _vin, barCode: _barCode));
+          await _shiftCarRepo.save(ShiftCar(id:sc.id,vin: sc.vin, barCode: _barCode));
       if (result > 0) {
         await _playMusic(_successAudio);
       } else if (result == -1) {

@@ -4,8 +4,12 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:csv/csv.dart';
 import 'package:gbk2utf8/gbk2utf8.dart';
+import 'package:audioplayers/audio_cache.dart';
 
 import '../database.dart';
+
+const _successAudio = 'success.mp3';
+const _errorAudio = 'error.mp3';
 
 class SettingPage extends StatefulWidget {
   @override
@@ -15,6 +19,7 @@ class SettingPage extends StatefulWidget {
 class _SettingPageState extends State<SettingPage>
     with SingleTickerProviderStateMixin {
   AnimationController _controller;
+  static AudioCache _player = AudioCache();
   final _formKey = GlobalKey<FormState>();
   String _outputCarPath = '';
   String _outputShiftCarPath = '';
@@ -62,9 +67,26 @@ class _SettingPageState extends State<SettingPage>
                 padding: EdgeInsets.symmetric(vertical: 30.0),
               ),
               RaisedButton(
-                child: Text('删除数据'),
-                onPressed: _deleteData,
-              )
+                child: Text('删除扫描数据'),
+                onPressed: _deleteCars,
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 30.0),
+              ),
+              RaisedButton(
+                child: Text('删除提车数据'),
+                onPressed: _deleteShifCars,
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 30.0),
+              ),
+              RaisedButton(
+                child: Text('删除仓库数据'),
+                onPressed: _deleteWarehouse,
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 30.0),
+              ),
             ],
           )
         ],
@@ -181,7 +203,7 @@ class _SettingPageState extends State<SettingPage>
     return rows;
   }
 
-  void _deleteData() {
+  void _deleteWarehouse() {
     showDialog(
         context: context,
         builder: (context) {
@@ -200,17 +222,10 @@ class _SettingPageState extends State<SettingPage>
                             color: Colors.red,
                           ),
                           Text(
-                            '请问您是否要永久删除当前所有数据？(数据不可恢复，请谨慎操作！！！)',
+                            '请问您是否要永久删除当前所有仓库数据？(删除仓库数据同时会删除扫描数据,数据不可恢复，请谨慎操作！！！)',
                             style: TextStyle(
                               color: Colors.red,
                               fontSize: 16.0,
-                            ),
-                          ),
-                          TextFormField(
-                            validator: (input) =>
-                                input == '删除所有数据' ? null : "请输入'确认删除'",
-                            decoration: InputDecoration(
-                              hintText: "若需要,请输入'删除所有数据'",
                             ),
                           ),
                         ],
@@ -235,7 +250,9 @@ class _SettingPageState extends State<SettingPage>
                 child: RaisedButton(
                   onPressed: () async {
                     if (_formKey.currentState.validate()) {
-                      await SQLiteClient().clean();
+                      await SQLiteClient().cleanWarehouse();
+                      await SQLiteClient().cleanCars();
+                      _playMusic(_successAudio);
                       Navigator.of(context).pop(true);
                     }
                   },
@@ -248,5 +265,135 @@ class _SettingPageState extends State<SettingPage>
           );
         });
     return;
+  }
+
+  void _deleteCars() {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            content: ListView(
+              children: <Widget>[
+                Container(
+                    height: 300,
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: <Widget>[
+                          Icon(
+                            Icons.delete_forever,
+                            size: 80.0,
+                            color: Colors.red,
+                          ),
+                          Text(
+                            '请问您是否要永久删除当前所有扫描数据？(数据不可恢复，请谨慎操作！！！)',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 16.0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+              ],
+            ),
+            actions: <Widget>[
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.0),
+                child: RaisedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(false);
+                  },
+                  child: Text('取消'),
+                  color: Colors.green,
+                  textColor: Colors.black,
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.0),
+                child: RaisedButton(
+                  onPressed: () async {
+                    if (_formKey.currentState.validate()) {
+                      await SQLiteClient().cleanCars();
+                      _playMusic(_successAudio);
+                      Navigator.of(context).pop(true);
+                    }
+                  },
+                  child: Text('确认'),
+                  color: Colors.red,
+                  textColor: Colors.black,
+                ),
+              )
+            ],
+          );
+        });
+    return;
+  }
+
+  void _deleteShifCars() {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            content: ListView(
+              children: <Widget>[
+                Container(
+                    height: 300,
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: <Widget>[
+                          Icon(
+                            Icons.delete_forever,
+                            size: 80.0,
+                            color: Colors.red,
+                          ),
+                          Text(
+                            '请问您是否要永久删除当前所有提车数据？(数据不可恢复，请谨慎操作！！！)',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 16.0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+              ],
+            ),
+            actions: <Widget>[
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.0),
+                child: RaisedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(false);
+                  },
+                  child: Text('取消'),
+                  color: Colors.green,
+                  textColor: Colors.black,
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.0),
+                child: RaisedButton(
+                  onPressed: () async {
+                    if (_formKey.currentState.validate()) {
+                      await SQLiteClient().cleanShiftCars();
+                      _playMusic(_successAudio);
+                      Navigator.of(context).pop(true);
+                    }
+                  },
+                  child: Text('确认'),
+                  color: Colors.red,
+                  textColor: Colors.black,
+                ),
+              )
+            ],
+          );
+        });
+    return;
+  }
+
+  Future<void> _playMusic(String name) async {
+    await _player.play(name);
   }
 }

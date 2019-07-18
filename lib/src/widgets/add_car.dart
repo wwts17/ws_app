@@ -6,6 +6,8 @@ import 'package:audioplayers/audio_cache.dart';
 import '../warehouse.dart';
 import '../car.dart';
 
+final saveSate = Map<String, dynamic>();
+
 class AddCar extends StatefulWidget {
   @override
   _AddCarState createState() => _AddCarState();
@@ -17,25 +19,31 @@ const _errorAudio = 'error.mp3';
 class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
   AnimationController _controller;
 
+  FocusNode focusNode;
   static AudioCache _player = AudioCache();
   final _whRepo = WarehouseRepository();
   final _carRepo = CarRepository();
   final _textController = TextEditingController();
+  final _textController2 = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  bool _fieldState = false;
+  bool _fieldState = saveSate["warehouse"] != null ?? false;
   String _scanResult = '';
-  int _selected;
-  String _mark, _vin;
+  int _selected = saveSate["warehouse"] ?? null;
+  String _mark = saveSate["mark"] ?? null;
+  String _vin;
   static List<Car> latest = [];
 
   @override
   void initState() {
+    focusNode = FocusNode();
     loadData();
     _controller = AnimationController(vsync: this);
-    _textController.addListener((){
-        if(_textController.text != null && _textController.text.isNotEmpty){
-          _submit();
-        }
+
+    _textController2.text = saveSate["mark"];
+    _textController.addListener(() {
+      if (_textController.text != null && _textController.text.isNotEmpty) {
+        _submit();
+      }
     });
     super.initState();
   }
@@ -47,157 +55,169 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
 
   @override
   void dispose() {
+    _textController2.dispose();
     _textController.dispose();
     _controller.dispose();
+    focusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return  ListView(
-                children:[
-                  _buildForm(),
-                Padding(
-                  padding: EdgeInsets.only(top: 20.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                    Row(
-                    children: <Widget>[
-                      Text(
-                        '最近',
-                        style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.w500),
-                      ),
-                      Icon(
-                        Icons.access_time,
-                        size: 26.0,
-                      ),
-                    ],
+    return ListView(
+      children: [
+        _buildForm(),
+        Padding(
+          padding: EdgeInsets.only(top: 20.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Text(
+                    '最近',
+                    style:
+                        TextStyle(fontSize: 20.0, fontWeight: FontWeight.w500),
                   ),
-                      Text('扫描数量：${latest.length}')
-                    ],
+                  Icon(
+                    Icons.access_time,
+                    size: 26.0,
                   ),
-                ),
-                Column(
-                  children: latest
-                      .map((f) =>Card(
+                ],
+              ),
+              Text('扫描数量：${latest.length}')
+            ],
+          ),
+        ),
+        Column(
+          children: latest
+              .map((f) => Card(
                       child: Container(
-                          child:Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          Text('VIN码:${f.vin}'),
-                          FutureBuilder<Warehouse>(
-                            future: _whRepo.queryById(f.warehouseId),
-                            builder: (context, snap2) {
-                              if (snap2.connectionState == ConnectionState.done) {
-                                return Text('仓库：${snap2.data.name}');
-                              } else {
-                                return Container();
-                              }
-                            },
-                          ),
-                          Text('道位：${f.mark}'),
-                          Text('序号：${f.num}'),
-                        ],
-                      )))).toList(),
-                ),
-              ],
-            );
+                          child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Text('VIN码:${f.vin}'),
+                      FutureBuilder<Warehouse>(
+                        future: _whRepo.queryById(f.warehouseId),
+                        builder: (context, snap2) {
+                          if (snap2.connectionState == ConnectionState.done) {
+                            return Text('仓库：${snap2.data.name}');
+                          } else {
+                            return Container();
+                          }
+                        },
+                      ),
+                      Text('道位：${f.mark}'),
+                      Text('序号：${f.num}'),
+                    ],
+                  ))))
+              .toList(),
+        ),
+      ],
+    );
   }
-
 
   Widget _buildForm() {
     return Form(
-        key: _formKey,
-        child: Column(
-          children: <Widget>[
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 12.0),
-              child: FutureBuilder<List<Warehouse>>(
-                future: _whRepo.all(),
-                builder: (context, snap) {
-                  if (snap.connectionState == ConnectionState.done &&
-                      snap.data != null &&
-                      snap.data.isNotEmpty) {
-                    return DropdownButtonFormField<int>(
-                      onChanged: (value) {
-                        print(value);
-                        setState(() {
-                          _selected = value;
-                          _fieldState = true;
-                        });
-                      },
-                      validator: (input) {
-                        if (input == null || input == 0) {
-                          return '请选择仓库';
-                        }
-                      },
-                      value: _selected,
-                      decoration: InputDecoration(
-                        labelText: '仓库',
-                        icon: Icon(Icons.storage),
-                      ),
-                      items: snap.data
-                          .map((m) => DropdownMenuItem(
-                              value: m.id, child: Text(m.name)))
-                          .toList(),
-                    );
-                  } else {
-                    return Container();
-                  }
-                },
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 12.0),
-              child: TextFormField(
-                controller: _textController,
-                enabled: _fieldState,
-                validator: (input) {
-                  var r = RegExp(r'^[A-Za-z0-9]{17}$');
-                  if (input.isEmpty || !r.hasMatch(input)) {
-                    return '请输入由数字和字母组成的17位识别码';
-                  }
-                  return null;
-                },
-                onSaved: (input) => _vin = input,
-                decoration: InputDecoration(
-                  labelText: 'VIN码',
-                  icon: Icon(Icons.code),
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.camera_alt),
-                    onPressed: () async {
-                      await scan();
+      key: _formKey,
+      child: Column(
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: FutureBuilder<List<Warehouse>>(
+              future: _whRepo.all(),
+              builder: (context, snap) {
+                if (snap.connectionState == ConnectionState.done &&
+                    snap.data != null &&
+                    snap.data.isNotEmpty) {
+                  return DropdownButtonFormField<int>(
+                    onChanged: (value) {
                       setState(() {
-                        _textController.text = _scanResult;
+                        _selected = value;
+                        saveSate["warehouse"] = value;
+                        _fieldState = true;
                       });
-                      _submit();
                     },
-                  ),
+                    validator: (input) {
+                      if (input == null || input == 0) {
+                        return '请选择仓库';
+                      }
+                    },
+                    value: _selected ?? saveSate["warehouse"],
+                    decoration: InputDecoration(
+                      labelText: '仓库',
+                      icon: Icon(Icons.storage),
+                    ),
+                    items: snap.data
+                        .map((m) =>
+                            DropdownMenuItem(value: m.id, child: Text(m.name)))
+                        .toList(),
+                  );
+                } else {
+                  return Container();
+                }
+              },
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: TextFormField(
+              controller: _textController,
+              focusNode: focusNode,
+              autofocus: _fieldState,
+              onFieldSubmitted: (_) {
+                FocusScope.of(context).requestFocus(focusNode);
+              },
+              enabled: _fieldState,
+              validator: (input) {
+                var r = RegExp(r'^[A-Za-z0-9]{17}$');
+                if (input.isEmpty || !r.hasMatch(input)) {
+                  return '请输入由数字和字母组成的17位识别码';
+                }
+                return null;
+              },
+              onSaved: (input) => _vin = input,
+              decoration: InputDecoration(
+                labelText: 'VIN码',
+                icon: Icon(Icons.code),
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.camera_alt),
+                  onPressed: () async {
+                    await scan();
+                    setState(() {
+                      _textController.text = _scanResult;
+                    });
+                    _submit();
+                  },
                 ),
               ),
             ),
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 12.0),
-              child: TextFormField(
-                enabled: _fieldState,
-                validator: (input) {
-                  var r = RegExp(r'[\u4e00-\u9fa5\w@]+$');
-                  if (input.isEmpty || !r.hasMatch(input)) {
-                    return '请输入道位';
-                  }
-                  return null;
-                },
-                onSaved: (input) => _mark = input,
-                decoration: InputDecoration(
-                  labelText: '道位',
-                  icon: Icon(Icons.room),
-                ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: TextFormField(
+              controller: _textController2,
+              enabled: _fieldState,
+              validator: (input) {
+                var r = RegExp(r'[\u4e00-\u9fa5\w@]+$');
+                if (input.isEmpty || !r.hasMatch(input)) {
+                  return '请输入道位';
+                }
+                return null;
+              },
+              onSaved: (input) {
+                _mark = input;
+                saveSate["mark"] = input;
+              },
+              decoration: InputDecoration(
+                labelText: '道位',
+                icon: Icon(Icons.room),
               ),
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
   }
 
   void _submit() async {
@@ -213,16 +233,20 @@ class _AddCarState extends State<AddCar> with SingleTickerProviderStateMixin {
           latest.add(_add);
           _textController.text = '';
         });
-      }else if(result==-1){
+      } else if (result == -1) {
         await _playMusic(_errorAudio);
-       return showDialog(
+        showDialog(
           context: context,
-          builder: (context){
+          builder: (context) {
             return AlertDialog(
-              content: Text('错误提示：重复的VIN码',style: TextStyle(color: Colors.red),),
+              content: Text(
+                '错误提示：重复的VIN码',
+                style: TextStyle(color: Colors.red),
+              ),
             );
           },
         );
+        _textController.text = '';
       }
     }
   }

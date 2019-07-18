@@ -51,6 +51,16 @@ class ShiftCarRepository{
         where: "id = ?", whereArgs: [whDB.id]);
   }
 
+  Future<ShiftCar> findByVin(String vin) async{
+    final client = await SQLiteClient().getConn();
+    var result = await client.query(_table,where: 'vin = ?', whereArgs: [vin]);
+    if (result.isEmpty) {
+      return null;
+    }
+    ShiftCar sc = ShiftCar.fromMap(result[0]);
+    return sc;
+  }
+
   Future<List<ShiftCar>> all() async {
     final client = await SQLiteClient().getConn();
     var result = await client.query(_table,orderBy: "created_at desc").then((l)=>l.map((m)=>ShiftCar.fromMap(m)).toList());
@@ -61,6 +71,11 @@ class ShiftCarRepository{
     final client = await SQLiteClient().getConn();
     var result = await client.query(_table,where:"vin like ? ",whereArgs: ['%${vin}%'],orderBy: 'created_at desc').then((l)=>l.map((m)=>ShiftCar.fromMap(m)).toList());
     return result;
+  }
+
+  Future<void> clean() async {
+    await SQLiteClient().cleanShiftCars();
+    return;
   }
 
 }
